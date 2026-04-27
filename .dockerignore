@@ -1,0 +1,11 @@
+node_modules
+data
+storage
+backups
+.env
+.git
+.gitignore
+*.log
+*.md
+!README.md
+sessions.sqlite*

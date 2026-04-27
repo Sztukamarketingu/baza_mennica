@@ -1,0 +1,80 @@
+<%- include('partials/head', { title: 'Pytania · mennica.pl' }) %>
+<%- include('partials/header', { user, csrf }) %>
+
+<main class="admin-screen">
+  <div class="stats-row">
+    <div class="stat">
+      <span class="stat-label">Postęp</span>
+      <strong><%= progress.answered %> / <%= progress.total %></strong>
+      <span class="muted">(<%= progress.pct %>%)</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">W kolejce</span>
+      <strong><%= statusCounts.pending %></strong>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Pominięte</span>
+      <strong><%= statusCounts.skipped %></strong>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Nieaktualne</span>
+      <strong><%= statusCounts.obsolete %></strong>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Bez transkryptu</span>
+      <strong><%= pendingTranscripts %></strong>
+    </div>
+  </div>
+
+  <div class="export-row">
+    <a class="btn" href="/export.json" target="_blank" rel="noopener">Eksport JSON</a>
+    <a class="btn" href="/export.csv">Eksport CSV</a>
+    <a class="btn" href="/export.md" target="_blank" rel="noopener">Eksport Markdown</a>
+    <a class="btn" href="/export-pending-zip">ZIP nagrań bez transkrypcji</a>
+  </div>
+
+  <% grouped.forEach(function(group){ %>
+    <section class="cat-block">
+      <h2><%= group.category.code %> — <%= group.category.name %></h2>
+      <table class="qtable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Pytanie</th>
+            <th>Status</th>
+            <th>Audio</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% group.questions.forEach(function(q){ %>
+            <tr class="row status-<%= q.status %>">
+              <td class="muted">#<%= q.id %></td>
+              <td><%= q.text %></td>
+              <td><span class="status-pill status-<%= q.status %>"><%= q.status %></span></td>
+              <td>
+                <% if (q.latest_answer_id) { %>
+                  <audio controls preload="none" src="/recordings/<%= q.latest_answer_id %>"></audio>
+                <% } else { %>
+                  <span class="muted">—</span>
+                <% } %>
+              </td>
+              <td class="row-actions-cell">
+                <% if (q.status !== 'obsolete') { %>
+                  <button class="link-btn js-mark-obsolete" data-id="<%= q.id %>">Nieaktualne</button>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </section>
+  <% }); %>
+</main>
+
+<script>
+  window.__APP__ = { csrf: <%- JSON.stringify(csrf) %> };
+</script>
+<script src="/admin.js"></script>
+
+<%- include('partials/foot') %>

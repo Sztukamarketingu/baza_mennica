@@ -1,0 +1,26 @@
+<%- include('partials/head', { title: 'Logowanie · mennica.pl' }) %>
+<main class="login-screen">
+  <div class="login-card">
+    <div class="brand-block">
+      <span class="brand-mark">Au</span>
+      <h1>Baza wiedzy <strong>mennica.pl</strong></h1>
+      <p class="muted">Zaloguj się, aby kontynuować nagrywanie odpowiedzi.</p>
+    </div>
+    <% if (error) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+    <form method="post" action="/login" class="form">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <label>
+        Email
+        <input type="email" name="email" autocomplete="username" required value="<%= email %>" autofocus>
+      </label>
+      <label>
+        Hasło
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">Zaloguj</button>
+    </form>
+  </div>
+</main>
+<%- include('partials/foot') %>

@@ -1,0 +1,78 @@
+<%- include('partials/head', { title: 'Sesja · mennica.pl' }) %>
+<%- include('partials/header', { user, csrf }) %>
+
+<main class="session-screen">
+  <div class="progress-bar">
+    <div class="progress-bar-fill" style="width: <%= progress.pct %>%"></div>
+    <span class="progress-bar-text">
+      Odpowiedziano <strong><%= progress.answered %>/<%= progress.total %></strong>
+      (<%= progress.pct %>%)
+    </span>
+  </div>
+
+  <% if (!question) { %>
+    <section class="card big-card center">
+      <h2>Świetna robota!</h2>
+      <p class="muted">Odpowiedziałeś na wszystkie pytania w kolejce. Możesz dodać własne pytanie poniżej albo wyeksportować bazę wiedzy.</p>
+      <div class="cta-row">
+        <a class="btn" href="/admin">Zobacz wszystkie pytania</a>
+        <a class="btn" href="/export.md" target="_blank">Eksport Markdown</a>
+      </div>
+    </section>
+  <% } else { %>
+    <section class="card big-card" id="qa-card" data-question-id="<%= question.id %>" data-max-seconds="<%= maxRecordingSeconds %>">
+      <div class="cat-tag">
+        <%= question.category_code %> · <%= question.category_name %>
+      </div>
+
+      <h2 class="question-text" id="question-text"><%= question.text %></h2>
+
+      <div class="recorder">
+        <button id="rec-toggle" type="button" class="rec-btn" aria-label="Nagrywaj">
+          <span class="rec-icon"></span>
+          <span class="rec-label">Nagrywaj</span>
+        </button>
+        <div class="rec-meta">
+          <span id="rec-timer">00:00</span>
+          <span id="rec-status" class="rec-status">Gotowe — kliknij, aby zacząć</span>
+        </div>
+      </div>
+
+      <div id="preview" class="preview hidden">
+        <audio id="preview-audio" controls></audio>
+        <div class="preview-actions">
+          <button id="btn-save" type="button" class="btn btn-primary">Zapisz odpowiedź</button>
+          <button id="btn-redo" type="button" class="btn">Nagraj ponownie</button>
+        </div>
+      </div>
+
+      <div class="row-actions">
+        <button id="btn-skip" type="button" class="link-btn">Pomiń to pytanie</button>
+        <button id="btn-obsolete" type="button" class="link-btn">Oznacz jako nieaktualne</button>
+        <button id="btn-edit" type="button" class="link-btn">Edytuj treść pytania</button>
+      </div>
+    </section>
+  <% } %>
+
+  <section class="card add-question-card">
+    <h3>Dodaj własne pytanie</h3>
+    <form id="add-question-form" class="form-inline" autocomplete="off">
+      <select name="category_id" id="category_id" required></select>
+      <input type="text" name="text" id="new-question-text" placeholder="Wpisz pytanie klienta..." minlength="3" maxlength="500" required>
+      <button type="submit" class="btn">Dodaj</button>
+    </form>
+  </section>
+</main>
+
+<div id="error-toast" class="toast hidden"></div>
+
+<script>
+  window.__APP__ = {
+    csrf: <%- JSON.stringify(csrf) %>,
+    maxRecordingSeconds: <%= maxRecordingSeconds %>,
+    initialQuestionId: <%= question ? question.id : 'null' %>
+  };
+</script>
+<script src="/app.js"></script>
+
+<%- include('partials/foot') %>

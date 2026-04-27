@@ -1,0 +1,19 @@
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="brand">
+      <span class="brand-mark">Au</span>
+      <span class="brand-text">Baza wiedzy <strong>mennica.pl</strong></span>
+    </a>
+    <nav class="topnav">
+      <a href="/">Sesja</a>
+      <a href="/admin">Pytania</a>
+      <% if (typeof user !== 'undefined' && user) { %>
+        <span class="user-badge"><%= user.email %></span>
+        <form action="/logout" method="post" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <button type="submit" class="link-btn">Wyloguj</button>
+        </form>
+      <% } %>
+    </nav>
+  </div>
+</header>
