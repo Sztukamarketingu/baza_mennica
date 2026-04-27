@@ -4,7 +4,9 @@ services:
     image: mennica-knowledge-collector:latest
     container_name: mennica-app
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - path: app.env
+        format: raw
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
