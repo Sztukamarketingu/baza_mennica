@@ -85,8 +85,11 @@ docker run --rm -it --entrypoint node node:20-alpine -e "require('bcryptjs').has
 # 3) Edytuj Caddyfile — zmień domenę i e-mail na własne, jeśli wdrażasz gdzie indziej
 nano Caddyfile
 
-# 4) Start
+# 4) Start z dołączonym Caddy (gdy porty 80/443 są wolne)
 docker compose up -d --build
+
+# Alternatywnie: start pod istniejącym Traefikiem na VPS-ie aikuznia.cloud
+docker compose -f docker-compose.traefik.yml up -d --build
 
 # 5) Sprawdź logi
 docker compose logs -f app
