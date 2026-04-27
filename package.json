@@ -14,7 +14,8 @@
     "seed": "node src/scripts/seed.js",
     "init": "npm run migrate && npm run seed",
     "hash-password": "node src/scripts/hash-password.js",
-    "smoke-test": "node src/scripts/smoke-test.js"
+    "smoke-test": "node src/scripts/smoke-test.js",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

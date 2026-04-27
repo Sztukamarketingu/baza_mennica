@@ -379,6 +379,13 @@ a:hover { text-decoration: underline; }
 .status-pill.status-obsolete { color: #ffb1aa; border-color: rgba(226,87,76,0.4); }
 
 .qtable audio { width: 240px; max-width: 100%; }
+.row-actions-cell {
+  min-width: 150px;
+}
+.row-actions-cell .link-btn {
+  display: block;
+  margin: 0 0 6px auto;
+}
 @media (max-width: 720px) {
   .qtable audio { width: 100%; }
 }

@@ -60,6 +60,9 @@
                 <% } %>
               </td>
               <td class="row-actions-cell">
+                <% if (q.answer_count > 0 || q.status === 'obsolete') { %>
+                  <button class="link-btn js-reset-question" data-id="<%= q.id %>">Nagraj ponownie</button>
+                <% } %>
                 <% if (q.status !== 'obsolete') { %>
                   <button class="link-btn js-mark-obsolete" data-id="<%= q.id %>">Nieaktualne</button>
                 <% } %>

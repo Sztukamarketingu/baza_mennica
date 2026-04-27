@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const { ensureAuth, ensureCsrfToken, verifyCsrf } = require('../auth');
 const { stmts, getProgress } = require('../queries');
+const { resetQuestionForRerecord } = require('../questionReset');
 
 router.use(ensureAuth);
 
@@ -60,6 +61,15 @@ router.post('/questions/:id/obsolete', verifyCsrf, (req, res) => {
   if (!q) return res.status(404).json({ error: 'not_found' });
   stmts.updateQuestionStatus.run('obsolete', id);
   res.json({ ok: true });
+});
+
+router.post('/questions/:id/reset', verifyCsrf, (req, res) => {
+  try {
+    const result = resetQuestionForRerecord(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message || 'reset_failed' });
+  }
 });
 
 router.post('/questions/:id/edit', verifyCsrf, (req, res) => {
