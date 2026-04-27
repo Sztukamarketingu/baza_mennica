@@ -89,6 +89,8 @@ nano Caddyfile
 docker compose up -d --build
 
 # Alternatywnie: start pod istniejącym Traefikiem na VPS-ie aikuznia.cloud
+cp .env.example app.env
+# uzupełnij app.env, potem:
 docker compose -f docker-compose.traefik.yml up -d --build
 
 # 5) Sprawdź logi

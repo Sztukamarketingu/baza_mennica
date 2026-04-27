@@ -3,6 +3,7 @@ data/
 storage/
 backups/
 .env
+app.env
 .DS_Store
 *.log
 sessions.sqlite

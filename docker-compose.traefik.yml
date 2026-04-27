@@ -4,7 +4,7 @@ services:
     image: baza-mennica-app:latest
     container_name: baza-mennica-app
     restart: unless-stopped
-    env_file: .env
+    env_file: app.env
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
