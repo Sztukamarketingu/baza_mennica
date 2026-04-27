@@ -8,6 +8,7 @@ const multer = require('multer');
 
 const { ensureAuth, verifyCsrf } = require('../auth');
 const { stmts } = require('../queries');
+const { notifyN8nAnswerRecorded } = require('../n8nIntegration');
 const {
   RECORDINGS_DIR,
   TMP_DIR,
@@ -90,6 +91,11 @@ router.post(
 
       const ins = stmts.insertAnswer.run(questionId, filename, duration);
       stmts.updateQuestionStatus.run('answered', questionId);
+      notifyN8nAnswerRecorded(ins.lastInsertRowid).then((result) => {
+        if (!result.ok && !result.skipped) {
+          console.warn('[n8n] Webhook notification failed', result);
+        }
+      });
 
       res.json({
         ok: true,

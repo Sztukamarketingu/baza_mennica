@@ -97,6 +97,12 @@ const stmts = {
 
   setTranscript: db.prepare(`
     UPDATE answers SET transcript = ?, transcript_status = 'done' WHERE id = ?
+  `),
+
+  updateTranscript: db.prepare(`
+    UPDATE answers
+    SET transcript = ?, transcript_status = ?
+    WHERE id = ?
   `)
 };
 

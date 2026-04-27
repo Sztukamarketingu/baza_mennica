@@ -121,6 +121,8 @@ Wolumeny:
 | `BASE_URL` | zalecane | Publiczny URL używany w eksportach (np. `https://baza-mennica.aikuznia.cloud`) |
 | `SECURE_COOKIE` | zalecane | `true` w produkcji (HTTPS), `false` lokalnie |
 | `FFMPEG_PATH` | nie | Ścieżka do binarki `ffmpeg`, domyślnie `ffmpeg` z PATH |
+| `N8N_WEBHOOK_URL` | nie | Produkcyjny webhook n8n wywoływany po zapisaniu nagrania |
+| `N8N_SHARED_SECRET` | nie | Sekret dla nagłówka `X-N8N-Secret` używany przez aplikację i n8n |
 
 ---
 
@@ -212,6 +214,76 @@ Skrypt:
 * wypisuje liczbę zaktualizowanych i nieznalezionych.
 
 Kolejny eksport `/export.md` automatycznie zawiera już teksty.
+
+---
+
+## Integracja n8n + Airtable
+
+Jeśli ustawisz `N8N_WEBHOOK_URL` i `N8N_SHARED_SECRET`, aplikacja po każdym zapisanym nagraniu wyśle do n8n event:
+
+```json
+{
+  "event": "answer.recorded",
+  "answer_id": 123,
+  "question_id": 45,
+  "question": "Jak kupić sztabkę?",
+  "category_code": "A",
+  "category": "Produkty",
+  "duration_seconds": 81,
+  "transcript_status": "pending",
+  "recorded_at": "2026-04-27 09:00:00",
+  "audio_download_url": "https://baza-mennica.aikuznia.cloud/integrations/n8n/recordings/123",
+  "callback_url": "https://baza-mennica.aikuznia.cloud/integrations/n8n/transcripts",
+  "auth_header_name": "X-N8N-Secret"
+}
+```
+
+Webhook do n8n dostaje nagłówek:
+
+```text
+X-N8N-Secret: <N8N_SHARED_SECRET>
+```
+
+Rekomendowany workflow n8n:
+
+```text
+Webhook (POST)
+→ HTTP Request: GET audio_download_url jako binary, header X-N8N-Secret
+→ OpenAI: transkrypcja gpt-4o-mini-transcribe
+→ Airtable: Create/Update record
+→ HTTP Request: POST callback_url, header X-N8N-Secret
+```
+
+Callback z n8n do aplikacji:
+
+```http
+POST /integrations/n8n/transcripts
+X-N8N-Secret: <N8N_SHARED_SECRET>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "answer_id": 123,
+  "transcript": "Transkrypt odpowiedzi...",
+  "transcript_status": "done"
+}
+```
+
+Pola Airtable, które pasują do payloadu:
+
+```text
+Question ID
+Answer ID
+Category
+Question
+Transcript
+Audio URL
+Recorded At
+Status
+```
 
 ---
 

@@ -17,6 +17,7 @@ const answersRouter = require('./routes/answers');
 const adminRouter = require('./routes/admin');
 const exportRouter = require('./routes/export');
 const recordingsRouter = require('./routes/recordings');
+const integrationsRouter = require('./routes/integrations');
 const { ensureCsrfToken } = require('./auth');
 
 const app = express();
@@ -63,6 +64,7 @@ app.use((req, res, next) => {
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
+app.use(integrationsRouter);
 app.use(authRouter);
 app.use(answersRouter);
 app.use(recordingsRouter);
