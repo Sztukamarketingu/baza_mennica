@@ -1,0 +1,62 @@
+[
+  {
+    "id": "mennicaAudioToAirtable",
+    "name": "Mennica - transkrypcja audio do Airtable",
+    "description": "Webhook z aplikacji baza-mennica: pobiera MP3, transkrybuje przez OpenAI, upsertuje rekord w Airtable i odsyła transkrypt do aplikacji.",
+    "active": false,
+    "nodes": [
+      {
+        "id": "mennica-webhook",
+        "name": "Mennica Answer Recorded",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          300
+        ],
+        "webhookId": "mennica-answer-recorded",
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "mennica-answer-recorded",
+          "responseMode": "onReceived",
+          "responseCode": 200,
+          "options": {}
+        }
+      },
+      {
+        "id": "mennica-process",
+        "name": "Transcribe, Airtable, Callback",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          320,
+          300
+        ],
+        "parameters": {
+          "jsCode": "const CONFIG = {\n  // Ten sekret musi być taki sam jak N8N_SHARED_SECRET w /opt/baza_mennica/app.env\n  mennicaSharedSecret: '5d187b65dc00f999d276899dcf9418651fd289363f06d4d6ee2f8f974a9080c7',\n\n  // Uzupełnij przed aktywacją workflow\n  openaiApiKey: 'PASTE_OPENAI_API_KEY',\n  airtableApiKey: 'PASTE_AIRTABLE_API_KEY',\n  airtableBaseId: 'PASTE_AIRTABLE_BASE_ID',\n  airtableTableName: 'Mennica QA',\n\n  openaiModel: 'gpt-4o-mini-transcribe'\n};\n\nfunction assertConfigured(name, value) {\n  if (!value || String(value).startsWith('PASTE_')) {\n    throw new Error(`Uzupełnij CONFIG.${name} w node Code przed aktywacją workflow.`);\n  }\n}\n\nfunction readSecret(headers = {}) {\n  return headers['x-n8n-secret'] || headers['X-N8N-Secret'] || headers['X-N8n-Secret'] || '';\n}\n\nasync function fetchJson(url, options) {\n  const response = await fetch(url, options);\n  const text = await response.text();\n  let json = null;\n  try {\n    json = text ? JSON.parse(text) : null;\n  } catch (err) {\n    json = { raw: text };\n  }\n  if (!response.ok) {\n    throw new Error(`${options?.method || 'GET'} ${url} failed ${response.status}: ${text.slice(0, 500)}`);\n  }\n  return json;\n}\n\nconst webhook = $input.first().json;\nconst payload = webhook.body || webhook;\nconst headers = webhook.headers || {};\n\nif (readSecret(headers) !== CONFIG.mennicaSharedSecret) {\n  throw new Error('Unauthorized: invalid X-N8N-Secret.');\n}\n\nassertConfigured('openaiApiKey', CONFIG.openaiApiKey);\nassertConfigured('airtableApiKey', CONFIG.airtableApiKey);\nassertConfigured('airtableBaseId', CONFIG.airtableBaseId);\n\nconst requiredFields = ['answer_id', 'question_id', 'question', 'category', 'audio_download_url', 'callback_url'];\nfor (const field of requiredFields) {\n  if (!payload[field]) throw new Error(`Missing payload field: ${field}`);\n}\n\nconst audioResponse = await fetch(payload.audio_download_url, {\n  headers: { 'X-N8N-Secret': CONFIG.mennicaSharedSecret }\n});\nif (!audioResponse.ok) {\n  throw new Error(`Audio download failed ${audioResponse.status}: ${await audioResponse.text()}`);\n}\n\nconst audioBuffer = await audioResponse.arrayBuffer();\nconst form = new FormData();\nform.append('model', CONFIG.openaiModel);\nform.append('file', new Blob([audioBuffer], { type: 'audio/mpeg' }), `answer-${payload.answer_id}.mp3`);\n\nconst transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {\n  method: 'POST',\n  headers: { Authorization: `Bearer ${CONFIG.openaiApiKey}` },\n  body: form\n});\nconst transcriptionText = await transcriptionResponse.text();\nlet transcription = null;\ntry {\n  transcription = JSON.parse(transcriptionText);\n} catch (err) {\n  transcription = { raw: transcriptionText };\n}\nif (!transcriptionResponse.ok) {\n  throw new Error(`OpenAI transcription failed ${transcriptionResponse.status}: ${transcriptionText.slice(0, 500)}`);\n}\nconst transcript = transcription.text || '';\nif (!transcript.trim()) {\n  throw new Error('OpenAI returned empty transcript.');\n}\n\nconst airtableUrl = `https://api.airtable.com/v0/${CONFIG.airtableBaseId}/${encodeURIComponent(CONFIG.airtableTableName)}`;\nconst airtablePayload = {\n  performUpsert: {\n    fieldsToMergeOn: ['Answer ID']\n  },\n  records: [\n    {\n      fields: {\n        'Question ID': String(payload.question_id),\n        'Answer ID': String(payload.answer_id),\n        'Category': payload.category || '',\n        'Question': payload.question || '',\n        'Transcript': transcript,\n        'Audio URL': payload.audio_download_url || '',\n        'Recorded At': payload.recorded_at || new Date().toISOString(),\n        'Status': 'transcribed'\n      }\n    }\n  ]\n};\n\nconst airtableResult = await fetchJson(airtableUrl, {\n  method: 'PATCH',\n  headers: {\n    Authorization: `Bearer ${CONFIG.airtableApiKey}`,\n    'Content-Type': 'application/json'\n  },\n  body: JSON.stringify(airtablePayload)\n});\n\nconst callbackResult = await fetchJson(payload.callback_url, {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n    'X-N8N-Secret': CONFIG.mennicaSharedSecret\n  },\n  body: JSON.stringify({\n    answer_id: payload.answer_id,\n    transcript,\n    transcript_status: 'done'\n  })\n});\n\nreturn [\n  {\n    json: {\n      ok: true,\n      answer_id: payload.answer_id,\n      question_id: payload.question_id,\n      transcript_chars: transcript.length,\n      airtable_record_id: airtableResult.records?.[0]?.id || null,\n      callback: callbackResult\n    }\n  }\n];"
+        }
+      }
+    ],
+    "connections": {
+      "Mennica Answer Recorded": {
+        "main": [
+          [
+            {
+              "node": "Transcribe, Airtable, Callback",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "callerPolicy": "workflowsFromSameOwner",
+      "availableInMCP": true,
+      "executionOrder": "v1"
+    },
+    "staticData": null,
+    "pinData": {},
+    "tags": []
+  }
+]
